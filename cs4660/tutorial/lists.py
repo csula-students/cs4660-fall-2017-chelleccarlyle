@@ -10,7 +10,7 @@ def get_last_item(li):
 
 def get_second_and_third_items(li):
     """Return second and third item from the list"""
-    return [li[1], li[2]]
+    return li[1:3]
 
 def get_sum(li):
     """Return the sum of the list items"""
