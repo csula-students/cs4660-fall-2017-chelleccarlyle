@@ -106,6 +106,24 @@ class AdjacencyList(object):
         # adjacencyList should be a dictonary of node to edges
         self.adjacency_list = {}
 
+    def __str__(self):
+        result = ""
+        for node in self.adjacency_list:
+            result += "Node: {}".format(node) + "\n"
+            for edge in self.adjacency_list[node]:
+                result += "\tEdge: {}".format(edge) + "\n"
+
+        return result
+
+    def __repr__(self):
+        result = ""
+        for node in self.adjacency_list:
+            result += "Node: {}".format(node) + "\n"
+            for edge in self.adjacency_list[node]:
+                result += "\tEdge: {}".format(edge) + "\n"
+
+        return result
+
     def adjacent(self, node_1, node_2):
         #find edge where from_node = node_1 and to_node = node_2
         listOfEdges = self.adjacency_list[node_1]

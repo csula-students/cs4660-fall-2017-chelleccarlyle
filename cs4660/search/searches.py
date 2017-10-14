@@ -24,6 +24,7 @@ def bfs(graph, initial_node, dest_node):
     while not q.empty():
         
         current_node = q.get() #Dequeue 
+        print("Current node: {}", current_node)
 
         #Get neighbors of intiial_node 
         neighbors = graph.neighbors(current_node)
