@@ -159,6 +159,18 @@ class AdjacencyList(object):
         else:
             return False
 
+    #Distance of two adjacent nodes
+    def distance(self, node_1, node_2):
+        
+        #get list of edges from node_1
+        listOfEdges = self.adjacency_list[node_1]
+
+        for edge in listOfEdges:
+            if edge.to_node == node_2:
+                return edge.weight
+
+        return None
+
 class AdjacencyMatrix(object):
     def __init__(self):
         # adjacency_matrix should be a two dimensions array of numbers that
@@ -241,7 +253,10 @@ class AdjacencyMatrix(object):
             return True
         else:
             return False
-        
+
+    #Distance of two adjacent nodes
+    def distance(self, node_1, node_2):
+        return self.adjacency_matrix[self.__get_node_index(node_1)][self.__get_node_index(node_2)]
 
     def __get_node_index(self, node):
         """helper method to find node index"""
@@ -301,6 +316,14 @@ class ObjectOriented(object):
             return True
         else:
             return False
+
+    #Distance of two adjacent nodes
+    def distance(self, node_1, node_2):
+        for edge in self.edges:
+            if edge.from_node == node_1 and edge.to_node == node_2:
+                return edge.weight
+
+        return None      
 
 #Test
 if __name__ == "__main__":
