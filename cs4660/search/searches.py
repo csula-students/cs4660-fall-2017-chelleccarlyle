@@ -24,12 +24,15 @@ def bfs(graph, initial_node, dest_node):
     while not q.empty():
         
         current_node = q.get() #Dequeue 
-        print("Current node: {}", current_node)
+
+        print("\nCurrentNode: {}\n".format(current_node))
 
         #Get neighbors of intiial_node 
         neighbors = graph.neighbors(current_node)
 
         for n in neighbors:
+            
+            print("\nNeighbor: {}\n".format(n))
 
             if not hasattr(n, 'parent'):
                 n.parent = current_node

@@ -11,6 +11,7 @@ import sys
 sys.path.append('../')
 from graph import graph as gr
 from search import searches
+from queue import Queue
 import json
 import codecs
 
@@ -76,77 +77,122 @@ def __json_request(target_url, body):
     response = json.load(reader(urlopen(req, jsondataasbytes)))
     return response
 
-def construct_graph_from_state(graph, states):
+def construct_graph_from_state(graph, state):
     """
     Construct graph from a list of JSON states
     """
 
+    #Create queue to store current states
+    q = Queue()
+    q.put(state)
+
     #construct nodes and edges and add them to graph
-    for state in states:
-        id = state["id"]
-        x = state["location"]["x"]
-        y = state["location"]["y"]
-        name = state["location"]["name"]
-        neighbors = state["neighbors"]
-        tile = Tile(x, y, name, id)
+    while not q.empty():
+        
+        current_state = q.get()
+
+        print("\nCurrent state:\n {}\n".format(current_state))
+
+        state_id = current_state["id"]
+        x = current_state["location"]["x"]
+        y = current_state["location"]["y"]
+        name = current_state["location"]["name"]
+
+        neighbors = current_state["neighbors"]
+        neighbors_states = []
+
+        #Create tile for state
+        tile = Tile(x, y, name, state_id)
         graph.add_node(gr.Node(tile)) #Add node to graph
-        #Add edges corresponding to neighbors and current state
+
+        # State is the dark room
+        if state_id == "f1f131f647621a4be7c71292e79613f9":
+            print("Dark room found!")
+            break
+
+        #Generate actual states of neighbors using their id and store in new array
         for neighbor in neighbors:
-            #Create tile for neighbor
+            #Get state from neighbor id
+            neighbor_id = neighbor["id"]
+            neighbors_states.append(get_state(neighbor_id))
+        
+        #Construct edges between neighbor_states and state
+        for neighbor in neighbors_states:
+            #Add neighbor state to queue
+            q.put(neighbor)
+
             neighbor_id = neighbor["id"]
             neighbor_x = neighbor["location"]["x"]
             neighbor_y = neighbor["location"]["y"]
             neighbor_name = neighbor["location"]["name"]
             neighbor_tile = Tile(neighbor_x, neighbor_y, neighbor_name, neighbor_id)
             #Get path between current state and neighbor
-            path = transition_state(state["id"], neighbor["id"])
+            path = transition_state(state_id, neighbor_id)
             #Get effect of path and store as edge.weight
             effect = path["event"]["effect"]
             graph.add_edge(gr.Edge(gr.Node(tile), gr.Node(neighbor_tile), effect))
-        #Repeat for its neighbors
-        graph = construct_graph_from_state(graph, neighbors)
 
     return graph
 
 if __name__ == "__main__":
+    
+    states = []
+
     # Your code starts here
     empty_room = get_state('7f3dc077574c013d98b2de8f735058b4')
     dark_room = get_state('f1f131f647621a4be7c71292e79613f9')
+    # neighbor = get_state('44dfaae131fa9d0a541c3eb790b57b00')
 
-    # Create empty room tile
-    empty_room_id = empty_room["id"]
-    empty_room_x = empty_room["location"]["x"]
-    empty_room_y = empty_room["location"]["y"]
-    empty_room_name = empty_room["location"]["name"]
-    empty_room_tile = Tile(empty_room_x, empty_room_y, empty_room_name, empty_room_id)
+    # states.append(empty_room)
+    # states.append(dark_room)
 
-    #Create dark room tile
-    dark_room_id = dark_room["id"]
-    dark_room_x = dark_room["location"]["x"]
-    dark_room_y = dark_room["location"]["y"]
-    dark_room_name = dark_room["location"]["name"]
-    dark_room_tile = Tile(dark_room_x, dark_room_y, dark_room_name, dark_room_id)
+    # # Create empty room tile
+    # empty_room_id = empty_room["id"]
+    # empty_room_x = empty_room["location"]["x"]
+    # empty_room_y = empty_room["location"]["y"]
+    # empty_room_name = empty_room["location"]["name"]
+    # empty_room_tile = Tile(empty_room_x, empty_room_y, empty_room_name, empty_room_id)
+
+    # #Create dark room tile
+    # dark_room_id = dark_room["id"]
+    # dark_room_x = dark_room["location"]["x"]
+    # dark_room_y = dark_room["location"]["y"]
+    # dark_room_name = dark_room["location"]["name"]
+    # dark_room_tile = Tile(dark_room_x, dark_room_y, dark_room_name, dark_room_id)
+
+    # for neighbor in empty_room['neighbors']:
+    #     for n in neighbor['neighbors']:
+    #         states.append(n)
+    #     states.append(neighbor)
+
+    # for neighbor in dark_room['neighbors']:
+    #     for n in neighbor['neighbors']:
+    #         states.append(n)
+    #     states.append(neighbor)
+        
 
     #Testing
     # print("\n\nEmptyRoom: {}\n\n".format(empty_room))
+    # print("\n\nNeighbor: {}\n\n".format(neighbor))
     # print("\n\nTransition: {}\n\n".format(transition_state(empty_room['id'], empty_room['neighbors'][0]['id'])))
+
     # # print("\n\n{}\n\n".format(empty_room['neighbors']))
     # # print("\n\nDarkRoom: {}\n\n".format(dark_room))
     # for neighbor in empty_room['neighbors']:
     #     path = transition_state('7f3dc077574c013d98b2de8f735058b4', neighbor['id'])
     #     print("\n\nPath to {}: {}\n\n".format(neighbor['id'], path))
 
-    current_graph = construct_graph_from_state(gr.AdjacencyList(), [empty_room, dark_room])
+    graph = construct_graph_from_state(gr.AdjacencyList(), empty_room)
 
     # print("Empty room tile: {}".format(empty_room_tile))
     # print("Dark room tile: {}".format(dark_room_tile))
 
-    # print("\ncurrent graph: \n\n{}".format(current_graph))
+    print("\ncurrent graph: \n\n{}".format(graph))
 
     #Use search algorithms to find path between empty room and dark room
-    listOfEdges = searches.bfs(current_graph, gr.Node(empty_room_tile), gr.Node(dark_room_tile))
+    # listOfEdges = searches.bfs(current_graph, gr.Node(empty_room_tile), gr.Node(dark_room_tile))
 
-    print("\nResult:\n")
-    print(listOfEdges)
+    # print("\nResult:\n")
+    # print(listOfEdges)
     # for edge in listOfEdges:
     #     print(edge)
