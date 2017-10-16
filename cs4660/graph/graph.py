@@ -75,7 +75,7 @@ class Node(object):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(self.data)
+        return hash(str(self.data))
 
 class Edge(object):
     """Edge represents basic unit of graph connecting between two edges"""

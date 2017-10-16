@@ -4,6 +4,32 @@ CS 4660
 link to my solution:
 https://github.com/csula-students/cs4660-fall-2017-chelleccarlyle/blob/quiz2/cs4660/quiz/main.py
 
+BFS: 60.253946 seconds
 BFS Path:
+Empty Room(7f3dc077574c013d98b2de8f735058b4):Dire Tombs(44dfaae131fa9d0a541c3eb790b57b00):0
+Dire Tombs(44dfaae131fa9d0a541c3eb790b57b00):Dire Tombs(15fd980b830cd4aa5d518e3df71aa6b1):0
+Dire Tombs(15fd980b830cd4aa5d518e3df71aa6b1):Chamber(83bb5112a32d2fe8790e7a9df8a152ae):0
+Chamber(83bb5112a32d2fe8790e7a9df8a152ae):Dark Room(f1f131f647621a4be7c71292e79613f9):-30
+Total hp: -30
 
+Dijkstra: 55.715220 seconds
 Dijkstra Path:
+Empty Room(7f3dc077574c013d98b2de8f735058b4):Empty Room(ef296fb452b14eb1cf579fa69d0fe7da):0
+Empty Room(ef296fb452b14eb1cf579fa69d0fe7da):Room with cage(cbff26e3f081b1573981f717f10e7061):20
+Room with cage(cbff26e3f081b1573981f717f10e7061):Room with cage(816fdf15b029e3ca2f4ba323bf6757d2):20
+Room with cage(816fdf15b029e3ca2f4ba323bf6757d2):Dire Tombs(59ef0676f42fd5dfdb22277d6c4e5d14):0
+Dire Tombs(59ef0676f42fd5dfdb22277d6c4e5d14):Dark Room(fd3bfe68d4469e378c8f27304b5b6bdd):0
+Dark Room(fd3bfe68d4469e378c8f27304b5b6bdd):Room with cage(e22cffe2464b067c164b52aa82562a40):20
+Room with cage(e22cffe2464b067c164b52aa82562a40):Dark Room(02e3bb466319aa0cd87a0ff4c3e38b4e):0
+Dark Room(02e3bb466319aa0cd87a0ff4c3e38b4e):Dark Room(b55da649495d78cc194f9d990fda4abb):0
+Dark Room(b55da649495d78cc194f9d990fda4abb):Dire Tombs(15fd980b830cd4aa5d518e3df71aa6b1):0
+Dire Tombs(15fd980b830cd4aa5d518e3df71aa6b1):Room with cage(66d2a976b926dfe017a065dc18f6c0c9):20
+Room with cage(66d2a976b926dfe017a065dc18f6c0c9):Dark Room(f8d7ec2b694290b9f78f8afa7e690b4b):20
+Dark Room(f8d7ec2b694290b9f78f8afa7e690b4b):Dire Tombs(8af54fb756e0e034262c57dbcd728d48):0
+Dire Tombs(8af54fb756e0e034262c57dbcd728d48):Empty Room(004caf1cc93f415e407336d9ac09e48e):0
+Empty Room(004caf1cc93f415e407336d9ac09e48e):Chamber(7938442b5c2d125f8c0a24b9aadf446d):0
+Chamber(7938442b5c2d125f8c0a24b9aadf446d):Chamber(e68e678fbdd3811e0e73adc40d5e5208):0
+Chamber(e68e678fbdd3811e0e73adc40d5e5208):Chamber(ede9b7929cb60201c67d8a0a7c578f94):0
+Chamber(ede9b7929cb60201c67d8a0a7c578f94):Chamber(83bb5112a32d2fe8790e7a9df8a152ae):0
+Chamber(83bb5112a32d2fe8790e7a9df8a152ae):Dark Room(f1f131f647621a4be7c71292e79613f9):-30
+Total hp: 70

@@ -4,7 +4,6 @@ Searches module defines all different search algorithms
 
 from queue import Queue
 from queue import PriorityQueue
-from copy import deepcopy
 import sys
 sys.path.append('../')
 from graph import graph as gr
@@ -38,7 +37,7 @@ def bfs(graph, initial_node, dest_node):
                 n.parent = current_node
 
             if n == dest_node:
-                endTile = deepcopy(n)
+                endTile = n
                 while hasattr(endTile, 'parent'):
                     actions.append(gr.Edge(endTile.parent, endTile, graph.distance(endTile.parent, endTile)))
                     endTile = endTile.parent;

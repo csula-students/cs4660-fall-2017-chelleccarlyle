@@ -6,14 +6,21 @@ to f1f131f647621a4be7c71292e79613f9
 TODO: implement BFS
 TODO: implement Dijkstra utilizing the path with highest effect number
 """
+
+# DON'T NEED TO CREATE A GRAPH FROM SCRATCH: THE SERVER IS THE GRAPH!
+# JSON OF STATE IS THE NODE
+# JSON OF TRANSITION STATE IS THE EDGE
+# Node will store JSON as data of state
+
 #JSON = Dictionary
 import sys
 sys.path.append('../')
 from graph import graph as gr
-from search import searches
-from queue import Queue
+# from search import searches
+from queue import Queue, PriorityQueue
 import json
 import codecs
+import time
 
 # http lib import for Python 2 and 3: alternative 4
 try:
@@ -24,28 +31,6 @@ except ImportError:
 GET_STATE_URL = "http://192.241.218.106:9000/getState"
 STATE_TRANSITION_URL = "http://192.241.218.106:9000/state"
 
-class Tile(object):
-    """Node represents basic unit of graph"""
-    def __init__(self, x, y, name, id):
-        self.x = x
-        self.y = y
-        self.name = name
-        self.id = id
-
-    def __str__(self):
-        return 'Tile(x: {}, y: {}, name: {}, id: {})'.format(self.x, self.y, self.name, self.id)
-    def __repr__(self):
-        return 'Tile(x: {}, y: {}, name: {}, id: {})'.format(self.x, self.y, self.name, self.id)
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.x == other.x and self.y == other.y and self.name == other.name and self.id == other.id
-        return False
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        return hash(str(self.x) + "," + str(self.y) + self.name + self.id)
 
 def get_state(room_id):
     """
@@ -77,122 +62,236 @@ def __json_request(target_url, body):
     response = json.load(reader(urlopen(req, jsondataasbytes)))
     return response
 
-def construct_graph_from_state(graph, state):
+def get_neighbors(node, discoveredNodes):
     """
-    Construct graph from a list of JSON states
+    Gets neighbors from node consisiting of JSON data (uses the JSON data to get neighbors)
+    Returns a list of nodes consisting of JSON data
     """
 
-    #Create queue to store current states
+    neighbors = []
+
+    #Get json data from node
+    state = node.data
+    neighbors_json = state["neighbors"]
+
+    for neighbor in neighbors_json:
+        alreadyDiscovered = False
+        #Get state from neighbor id
+        neighbor_id = neighbor["id"]
+        for node in discoveredNodes:
+            if node.data["id"] == neighbor_id:
+                alreadyDiscovered = True
+                break
+        if not alreadyDiscovered:
+            neighbors.append(get_state(neighbor_id))
+
+    #Convert states to nodes in neighbors
+    for i, neighbor in enumerate(neighbors):
+        neighbors[i] = gr.Node(neighbor)
+
+    return neighbors
+
+def get_distance(node_1, node_2):
+    """
+    Gets the distance (edge weight = effect) of two nodes
+    """
+    #Get states
+    state_1 = node_1.data
+    state_2 = node_2.data
+    #Get transition state from state ids
+    path = transition_state(state_1["id"], state_2["id"])
+    
+    #Return the event effect from path as edge cost
+    return path["event"]["effect"]
+
+def get_node_str(node):
+    data = node.data
+    return "{}({})".format(data['location']['name'], data['id'])
+
+def get_edge_str(edge):
+    #get from node, to node and edge weight
+    weight = edge.weight
+
+    from_node_string = get_node_str(edge.from_node)
+    to_node_string = get_node_str(edge.to_node)
+
+    return "{}:{}:{}".format(from_node_string, to_node_string, weight)
+
+def dijkstra_search(initial_node, dest_node):
+    
+    """
+    Dijkstra Search
+    uses graph to do search from the initial_node to dest_node
+    returns a list of actions going from the initial node to dest_node
+    """
+    #Distance of each node
+    #Parents of each node
+    #Actions will be list of edges returned
+    #For priority queue, you want to get the highest distance (effect): must make distances negative when putting to priority queue
+    distances = {}
+    parents = {}
+    actions = []
+    discoveredNodes = []
+
+    #Create priority queue
+    queue = PriorityQueue()
+
+    initial_node.isDiscovered = False
+
+    #Set distance of initial_node to 0
+    distances[initial_node] = 0
+
+    #Create counter for priority queue in case there is a tie between distances of nodes, will get node that comes in first (FIFO)
+    counter = 1
+    nodesDiscovered = 0
+    #Store initial node distance and initial node as tuple in priority queue
+    queue.put((distances[initial_node], counter, initial_node))
+
+    while not queue.empty():
+        
+        #Get cheapest node
+        current_node = queue.get()
+        currentDistance = current_node[0]
+        print("\nHighest distance: {}\n".format(currentDistance * -1))
+        current_node = current_node[2] #Get the node, which is third element of tuple
+
+        #Only use if node has not been discovered
+        if current_node.isDiscovered or current_node in discoveredNodes:
+            print("\n\nNode was already discovered.\n\n")
+            continue
+        else:
+            current_node.isDiscovered = True
+            #Replace node in grpah with current_node to update isDiscovered attribute
+            # listOfEdges = graph.adjacency_list.pop(current_node)
+            # graph.adjacency_list[current_node] = listOfEdges
+            nodesDiscovered += 1
+            discoveredNodes.append(current_node)
+
+        print("\nCurrent Node: {}\n".format(current_node))
+        print("\nNumber of nodes discovered: {}\n".format(nodesDiscovered))
+
+        #Get neighbors of current_node from server
+        neighbors = get_neighbors(current_node, discoveredNodes)
+
+        # for n in neighbors:
+        #     #Add node to graph
+        #     graph.add_node(n)
+        #     distance = get_distance(current_node, n)
+        #     #Construct edge between neighbor and current_node and add to graph
+        #     edge = gr.Edge(current_node, n, distance)
+        #     graph.add_edge(edge)
+
+        #Check neighbors inside graph
+        for n in neighbors:           
+            if not hasattr(n, 'isDiscovered'):
+                n.isDiscovered = False
+
+            #Node hasn't been added a distance yet
+            if n not in distances:
+                distances[n] = -sys.maxsize - 1
+
+            # #Move to next neighbor if n is already discovered
+            # if n.isDiscovered:
+            #     print("\n\nNeighbor was already discovered.\n\n")
+            #     continue
+
+            print("\nNeighbor: {}\n".format(n))
+
+            alt = distances[current_node] + get_distance(current_node, n)
+
+            if alt > distances[n]:
+                distances[n] = alt
+                parents[n] = current_node
+
+            #Increase counter
+            counter = counter + 1
+            queue.put((-1 * distances[n], counter, n)) #Multiply by -1 to get max value instead of min value for priority queue
+
+            # if n == dest_node:
+            #     print("\nDestination node is found!\n")
+            #     queue.queue.clear()
+            #     break
+
+    #After queue is empty, shortest path for dest_node is stored by parents (updated each time a shorter path is found)
+    print("\nQueue is empty!!!\n")
+    while dest_node in parents:
+        print("\nDestination node: {}\n".format(dest_node))
+        actions.append(gr.Edge(parents[dest_node], dest_node, get_distance(parents[dest_node], dest_node)))
+        dest_node = parents[dest_node]
+
+    actions.reverse()
+    return actions
+
+
+def bfs(initial_node, dest_node):
+    """
+    Breadth First Search
+    uses server to do search from the initial_node to dest_node
+    returns a list of actions (edges) going from the initial node to dest_node
+    """
+    actions = []
+
     q = Queue()
-    q.put(state)
+    q.put(initial_node) #Put initial node in queue
 
-    #construct nodes and edges and add them to graph
     while not q.empty():
         
-        current_state = q.get()
+        current_node = q.get() #Dequeue 
 
-        print("\nCurrent state:\n {}\n".format(current_state))
+        print("\nCurrent Node: {}\n".format(current_node))
 
-        state_id = current_state["id"]
-        x = current_state["location"]["x"]
-        y = current_state["location"]["y"]
-        name = current_state["location"]["name"]
+        #Get neighbors of current_node:
+        neighbors = get_neighbors(current_node, [])
 
-        neighbors = current_state["neighbors"]
-        neighbors_states = []
+        # for n in neighbors:
+        #     #Add node to graph
+        #     graph.add_node(n)
+        #     #Construct edge between neighbor and current_node and add to graph
+        #     edge = gr.Edge(current_node, n, get_distance(current_node, n))
+        #     graph.add_edge(edge)
 
-        #Create tile for state
-        tile = Tile(x, y, name, state_id)
-        graph.add_node(gr.Node(tile)) #Add node to graph
+        for n in neighbors:
+            
+            print("\nNeighbor: {}\n".format(n))
 
-        # State is the dark room
-        if state_id == "f1f131f647621a4be7c71292e79613f9":
-            print("Dark room found!")
-            break
+            if not hasattr(n, 'parent'):
+                n.parent = current_node
 
-        #Generate actual states of neighbors using their id and store in new array
-        for neighbor in neighbors:
-            #Get state from neighbor id
-            neighbor_id = neighbor["id"]
-            neighbors_states.append(get_state(neighbor_id))
-        
-        #Construct edges between neighbor_states and state
-        for neighbor in neighbors_states:
-            #Add neighbor state to queue
-            q.put(neighbor)
+            if n == dest_node:
+                endTile = n
+                while hasattr(endTile, 'parent'):
+                    #Get edge weight of two nodes
+                    actions.append(gr.Edge(endTile.parent, endTile, get_distance(endTile.parent, endTile)))
+                    endTile = endTile.parent;
+                actions.reverse() #Reverse the order of the actions array
+                return actions
 
-            neighbor_id = neighbor["id"]
-            neighbor_x = neighbor["location"]["x"]
-            neighbor_y = neighbor["location"]["y"]
-            neighbor_name = neighbor["location"]["name"]
-            neighbor_tile = Tile(neighbor_x, neighbor_y, neighbor_name, neighbor_id)
-            #Get path between current state and neighbor
-            path = transition_state(state_id, neighbor_id)
-            #Get effect of path and store as edge.weight
-            effect = path["event"]["effect"]
-            graph.add_edge(gr.Edge(gr.Node(tile), gr.Node(neighbor_tile), effect))
+            #Add to queue
+            q.put(n)
 
-    return graph
 
 if __name__ == "__main__":
-    
-    states = []
 
     # Your code starts here
     empty_room = get_state('7f3dc077574c013d98b2de8f735058b4')
     dark_room = get_state('f1f131f647621a4be7c71292e79613f9')
-    # neighbor = get_state('44dfaae131fa9d0a541c3eb790b57b00')
 
-    # states.append(empty_room)
-    # states.append(dark_room)
+    start_time = time.time()
+    bfs_actions = bfs(gr.Node(empty_room), gr.Node(dark_room))
+    bfs_time = time.time() - start_time
 
-    # # Create empty room tile
-    # empty_room_id = empty_room["id"]
-    # empty_room_x = empty_room["location"]["x"]
-    # empty_room_y = empty_room["location"]["y"]
-    # empty_room_name = empty_room["location"]["name"]
-    # empty_room_tile = Tile(empty_room_x, empty_room_y, empty_room_name, empty_room_id)
+    start_time = time.time()
+    dij_actions = dijkstra_search(gr.Node(empty_room), gr.Node(dark_room))
+    dij_time = time.time() - start_time
 
-    # #Create dark room tile
-    # dark_room_id = dark_room["id"]
-    # dark_room_x = dark_room["location"]["x"]
-    # dark_room_y = dark_room["location"]["y"]
-    # dark_room_name = dark_room["location"]["name"]
-    # dark_room_tile = Tile(dark_room_x, dark_room_y, dark_room_name, dark_room_id)
+    print("BFS: %.6f seconds" % (bfs_time))
 
-    # for neighbor in empty_room['neighbors']:
-    #     for n in neighbor['neighbors']:
-    #         states.append(n)
-    #     states.append(neighbor)
+    print("BFS Path:")
+    for action in bfs_actions:
+        print(get_edge_str(action))
 
-    # for neighbor in dark_room['neighbors']:
-    #     for n in neighbor['neighbors']:
-    #         states.append(n)
-    #     states.append(neighbor)
-        
+    print("Dijkstra: %.6f seconds" % (dij_time))
 
-    #Testing
-    # print("\n\nEmptyRoom: {}\n\n".format(empty_room))
-    # print("\n\nNeighbor: {}\n\n".format(neighbor))
-    # print("\n\nTransition: {}\n\n".format(transition_state(empty_room['id'], empty_room['neighbors'][0]['id'])))
-
-    # # print("\n\n{}\n\n".format(empty_room['neighbors']))
-    # # print("\n\nDarkRoom: {}\n\n".format(dark_room))
-    # for neighbor in empty_room['neighbors']:
-    #     path = transition_state('7f3dc077574c013d98b2de8f735058b4', neighbor['id'])
-    #     print("\n\nPath to {}: {}\n\n".format(neighbor['id'], path))
-
-    graph = construct_graph_from_state(gr.AdjacencyList(), empty_room)
-
-    # print("Empty room tile: {}".format(empty_room_tile))
-    # print("Dark room tile: {}".format(dark_room_tile))
-
-    print("\ncurrent graph: \n\n{}".format(graph))
-
-    #Use search algorithms to find path between empty room and dark room
-    # listOfEdges = searches.bfs(current_graph, gr.Node(empty_room_tile), gr.Node(dark_room_tile))
-
-    # print("\nResult:\n")
-    # print(listOfEdges)
-    # for edge in listOfEdges:
-    #     print(edge)
+    print("Dijkstra Path:")
+    for action in dij_actions:
+        print(get_edge_str(action))
