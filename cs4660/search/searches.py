@@ -24,14 +24,14 @@ def bfs(graph, initial_node, dest_node):
         
         current_node = q.get() #Dequeue 
 
-        print("\nCurrentNode: {}\n".format(current_node))
+        # print("\nCurrentNode: {}\n".format(current_node))
 
         #Get neighbors of intiial_node 
         neighbors = graph.neighbors(current_node)
 
         for n in neighbors:
             
-            print("\nNeighbor: {}\n".format(n))
+            # print("\nNeighbor: {}\n".format(n))
 
             if not hasattr(n, 'parent'):
                 n.parent = current_node
@@ -118,6 +118,9 @@ def dijkstra_search(graph, initial_node, dest_node):
         current_node = queue.get()
         current_node = current_node[2] #Get the node, which is third element of tuple
 
+        if current_node == dest_node:
+            break
+
         #Only use if node has not been discovered
         if current_node.isDiscovered:
             continue
@@ -159,10 +162,92 @@ def dijkstra_search(graph, initial_node, dest_node):
     #print("\nActions: \n{}\n".format(actions))  
     return actions
 
+def heuristic(node_1, node_2):
+    """
+    Returns distance between nodes
+    (Only works for grid)
+    """
+    #Get tile from each node
+    tile_1 = node_1.data
+    tile_2 = node_2.data
+
+    # Manhattan distance
+    return abs(tile_1.x - tile_2.x) + abs(tile_1.y - tile_2.y)
+
 def a_star_search(graph, initial_node, dest_node):
     """
     A* Search
     uses graph to do search from the initial_node to dest_node
     returns a list of actions going from the initial node to dest_node
+
+    Almost the same as Dijkstra except that it also includes a heuristic function for the priority f(n)
     """
-    return []
+    #Distance of each node
+    #Parents of each node
+    #Actions will be list of edges returned
+    distances = {}
+    parents = {}
+    actions = []
+
+    #Create priority queue
+    queue = PriorityQueue()
+
+    initial_node.isDiscovered = False
+
+    #Set distance of initial_node to 0
+    distances[initial_node] = 0
+
+    #Create counter for priority queue in case there is a tie between distances of nodes, will get node that comes in first (FIFO)
+    counter = 1
+    #Store initial node distance and initial node as tuple in priority queue
+    queue.put((distances[initial_node], counter, initial_node))
+
+    while not queue.empty():
+        
+        #Get cheapest node
+        current_node = queue.get()
+        current_node = current_node[2] #Get the node, which is third element of tuple
+
+        if current_node == dest_node:
+            break
+
+        #Only use if node has not been discovered
+        if current_node.isDiscovered:
+            continue
+        else:
+            current_node.isDiscovered = True
+
+        #Get neighbors of current_node
+        neighbors = graph.neighbors(current_node)
+
+        for n in neighbors:
+            
+            if not hasattr(n, 'isDiscovered'):
+                n.isDiscovered = False
+
+            #Node hasn't been added a distance yet
+            if n not in distances:
+                distances[n] = sys.maxsize
+
+            #Move to next neighbor if n is already discovered
+            if n.isDiscovered:
+                continue
+
+            alt = distances[current_node] + graph.distance(current_node, n)
+
+            if alt < distances[n]:
+                distances[n] = alt
+                parents[n] = current_node
+
+            #Increase counter
+            counter = counter + 1
+            queue.put((distances[n] + heuristic(n, dest_node), counter, n))
+
+    #After queue is empty, shortest path for dest_node is stored by parents (updated each time a shorter path is found)
+    while dest_node in parents:
+            actions.append(gr.Edge(parents[dest_node], dest_node, graph.distance(parents[dest_node], dest_node)))
+            dest_node = parents[dest_node]
+
+    actions.reverse()  
+    #print("\nActions: \n{}\n".format(actions))  
+    return actions

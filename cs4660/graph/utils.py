@@ -54,10 +54,13 @@ def parse_grid_file(graph, file_path):
         lines[i] = [line[i:i+2] for i in range(0, len(line), 2)]
 
     for y, line in enumerate(lines):
+        print(line)
         for x, tile in enumerate(line):
             #Construct node using tile
             if tile != "##":
                 graph.add_node(Node(Tile(x, y, tile)))
+
+    print("\n\n")
 
     for y, line in enumerate(lines):
         for x, tile in enumerate(line):
